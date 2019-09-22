@@ -4,6 +4,7 @@ import scipy
 import keras 
 
 
+
 class GetParameters(object):
     'Class containing all HyperParameters'
     def __init__(self, sampling_rate, audio_time, n_classes, n_folds, learning_rate, max_epochs):
@@ -16,11 +17,12 @@ class GetParameters(object):
         self.max_epochs = max_epochs
 
         self.audio_length = self.sampling_rate * self.audio_duration
+        self.dim = (self.audio_length, 1)
 
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, parameters, list_IDs, labels, batch_size=32, shuffle=True):
+    def __init__(self, data_dir, parameters, list_IDs, labels, batch_size=32, shuffle=True):
         'Initialization'
         self.parameters = parameters
         self.batch_size = batch_size
@@ -43,7 +45,7 @@ class DataGenerator(keras.utils.Sequence):
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
 
         # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
+        return self.__data_generation(list_IDs_temp)
 
 
     def on_epoch_end(self):
@@ -56,10 +58,35 @@ class DataGenerator(keras.utils.Sequence):
         'Generates data containing batch size samples'
         print(list_IDs_temp)
 
+        cur_batch_size = len(list_IDs_temp)
+        X = np.empty((cur_batch_size, *self.dim))
 
+        input_length = self.GetParameters.audio_duration
+        for i, ID in enumerate(list_IDs_temp):
+            file_path = self.data_dir + ID
 
-params = GetParameters(sampling_rate=16000, audio_time=2, n_classes=41, n_folds=5, learning_rate=0.001, max_epochs = 50)
+            data, _ = librosa.core.load(file_path, sr=self.GetParameters.sampling_rate, res_type='kaiser_fast')
 
+            # Random offset / Padding
+            if len(data) > input_length:
+                max_offset = len(data) - input_length
+                offset = np.random.randint(max_offset)
+                data = data[offset:(input_length+offset)]
+            else:
+                if input_length > len(data):
+                    max_offset = input_length - len(data)
+                    offset = np.random.randint(max_offset)
+                else:
+                    offset = 0
+                data = np.pad(data, (offset, input_length - len(data) - offset), "constant")
+
+        if self.labels is not None:
+            y = np.empty(cur_batch_size, dtype = int)
+            for i, ID in enumerate(list_IDs_temp):
+                y[i] = self.labels[ID]
+                return X, keras.utils.to_categorical(y, num_classes=self.GetParameters.n_classes)
+            else:
+                return X
 
 
 
