@@ -2,7 +2,7 @@ import librosa
 import numpy as np
 import scipy
 import keras 
-
+from tensorflow.python.keras.utils.data_utils import Sequence
 
 
 class GetParameters(object):
@@ -20,9 +20,9 @@ class GetParameters(object):
         self.dim = (self.audio_length, 1)
 
 
-class DataGenerator(keras.utils.Sequence):
+class DataGenerator(Sequence):
     'Generates data for Keras'
-    def __init__(self, data_dir, parameters, list_IDs, labels, batch_size=32, shuffle=True):
+    def __init__(self, data_dir, parameters, list_IDs, labels, batch_size=32, shuffle=True, preprocessing_fn=lambda x: x):
         'Initialization'
         self.parameters = parameters
         self.batch_size = batch_size
@@ -30,6 +30,8 @@ class DataGenerator(keras.utils.Sequence):
         self.list_IDs = list_IDs
         self.shuffle = shuffle
         self.on_epoch_end()
+        self.data_dir = data_dir
+        self.preprocessing_fn = preprocessing_fn
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -39,13 +41,14 @@ class DataGenerator(keras.utils.Sequence):
         'Generate one batch of data'
 
         # generates indexes for the batch
+        #print('index inside getitem', index)
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
 
         # find list of ID's
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        self.list_IDs_temp = [self.list_IDs[k] for k in indexes]
 
         # Generate data
-        return self.__data_generation(list_IDs_temp)
+        return self.data_generation(self.list_IDs_temp)
 
 
     def on_epoch_end(self):
@@ -54,18 +57,20 @@ class DataGenerator(keras.utils.Sequence):
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
-    def __data_generation(self, list_IDs_temp):
+    def data_generation(self, list_IDs_temp):
         'Generates data containing batch size samples'
-        print(list_IDs_temp)
+        #print(len(list_IDs_temp))
+        self.cur_batch_size = len(list_IDs_temp)
+        #print(self.cur_batch_size)
 
-        cur_batch_size = len(list_IDs_temp)
-        X = np.empty((cur_batch_size, *self.dim))
+        X = np.empty((self.cur_batch_size, *self.parameters.dim))
 
-        input_length = self.GetParameters.audio_duration
+        input_length = self.parameters.audio_length
         for i, ID in enumerate(list_IDs_temp):
+
             file_path = self.data_dir + ID
 
-            data, _ = librosa.core.load(file_path, sr=self.GetParameters.sampling_rate, res_type='kaiser_fast')
+            data, _ = librosa.core.load(file_path, sr=self.parameters.sampling_rate, res_type='kaiser_fast')
 
             # Random offset / Padding
             if len(data) > input_length:
@@ -80,14 +85,19 @@ class DataGenerator(keras.utils.Sequence):
                     offset = 0
                 data = np.pad(data, (offset, input_length - len(data) - offset), "constant")
 
+            #print(data.shape)
+
         if self.labels is not None:
-            y = np.empty(cur_batch_size, dtype = int)
+            y = np.empty(self.cur_batch_size, dtype = int)
             for i, ID in enumerate(list_IDs_temp):
+                #print(ID)
                 y[i] = self.labels[ID]
-                return X, keras.utils.to_categorical(y, num_classes=self.GetParameters.n_classes)
+                print(y[i])
+                return X, keras.utils.to_categorical(y, num_classes=self.parameters.n_classes)
             else:
                 return X
 
+            
 
 
 
@@ -95,3 +105,4 @@ class DataGenerator(keras.utils.Sequence):
 
 
 
+    

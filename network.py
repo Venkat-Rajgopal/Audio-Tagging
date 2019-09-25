@@ -15,34 +15,10 @@ max_epochs = 50
 dim = (audio_time, 1)
 data_dir = 'data/audio_train/'
 batch_size = 32
+
 # Make data generation functions here
 
 
-def n_batches():
-    return int(np.floor(len(list_IDs) / batch_size))
-
-
-def on_epoch_end():
-    indexes = np.arange(len(list_IDs))
-    return indexes
-
-def get_item(indexes, index):
-    indexes = indexes[index*batch_size:(index+1)*batch_size]
-
-    list_IDs_temp = [list_IDs[k] for k in indexes]
-
-    return data_generation(list_IDs_temp)
-
-def data_generation(list_IDs_temp):
-    cur_batch_size = len(list_IDs_temp)
-    X = np.empty((cur_batch_size, dim))
-
-
-    input_length = audio_time
-
-    for i, ID in enumerate(list_IDs_temp):
-        print(i)
-        print(ID)
 
 
 
