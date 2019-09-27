@@ -89,20 +89,14 @@ class DataGenerator(Sequence):
 
         if self.labels is not None:
             y = np.empty(self.cur_batch_size, dtype = int)
+            #print(y.shape)
+            #print(list_IDs_temp)
+            #print(len(self.labels))
+
             for i, ID in enumerate(list_IDs_temp):
-                #print(ID)
+                #print(self.labels[ID])
                 y[i] = self.labels[ID]
-                print(y[i])
-                return X, keras.utils.to_categorical(y, num_classes=self.parameters.n_classes)
-            else:
-                return X
-
-            
-
-
-
-
-
-
-
-    
+                #print(y)
+            return X, keras.utils.to_categorical(y, num_classes=self.parameters.n_classes)
+        else:
+            return X

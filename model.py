@@ -4,7 +4,7 @@ from classes import GetParameters, DataGenerator
 from sklearn.model_selection import StratifiedKFold
 import tensorflow as tf
 
-from keras.layers import Convolution1D, Dense, Dropout, GlobalAveragePooling1D, GlobalMaxPool1D, Input, MaxPool1D, concatenate
+#from keras.layers import Convolution1D, Dense, Dropout, GlobalAveragePooling1D, GlobalMaxPool1D, Input, MaxPool1D, concatenate
 from keras.activations import softmax
 from keras import losses, models, optimizers
 
@@ -14,7 +14,7 @@ label_idx = {label: i for i, label in enumerate(labels)}
 train_file.set_index('fname',  inplace=True)
 train_file["label_idx"] = train_file.label.apply(lambda x: label_idx[x])
 
-params = GetParameters(sampling_rate=16000, audio_time=2, n_classes=100, n_folds=10, learning_rate=0.001, max_epochs = 5)
+params = GetParameters(sampling_rate=16000, audio_time=2, n_classes=len(labels), n_folds=10, learning_rate=0.001, max_epochs = 5)
 
 def audio_norm(data):
     max_data = np.max(data)
@@ -28,7 +28,9 @@ def model_1d(params):
     input_length = params.audio_length
     
     inp = tf.keras.layers.Input(shape=(input_length,1))
+
     x = tf.keras.layers.GlobalMaxPool1D()(inp)
+
     out = tf.keras.layers.Dense(nclass, activation=tf.keras.activations.softmax)(x)
 
     #model = models.Model(inputs=inp, outputs=out)
@@ -46,9 +48,11 @@ for i, (train_split, val_split) in enumerate(skf.split(train_file.index, train_f
     train_set = train_file.iloc[train_split]
     val_set = train_file.iloc[val_split]
 
+    print('Training set size:',train_set.shape)
+
     train_gen = DataGenerator(data_dir = 'data/audio_train/', parameters = params, list_IDs = train_set.index, labels = train_set['label_idx'], preprocessing_fn=audio_norm)
     val_gen = DataGenerator(data_dir = 'data/audio_train/', parameters = params, list_IDs = val_set.index, labels = val_set['label_idx'], preprocessing_fn=audio_norm)
     
     model = model_1d(params)
     history = model.fit_generator(train_gen,  validation_data = val_gen, epochs=params.max_epochs, use_multiprocessing=True, workers=6, max_queue_size=20)
-    model.load_weights('best_%d.h5'%i)
+    #model.load_weights('best_%d.h5'%i)
