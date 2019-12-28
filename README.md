@@ -9,11 +9,11 @@ Data is taken from the [Freesound general purpose Audio tagging challenge](https
 ## Feature Extractions
 Multiple feature extraction methods are performed. Signals are pre-processed using bit normalization and computing running means. A single sample preprocessing looks like this. 
 
-<img src="plots/signal_processed.png" alt="eval" width="550"/>
+<img src="plots/signal_processed.png" alt="eval" width="650"/>
 
 Shape, Width, No of zero crossings and no of peaks in a spectrum are computed. 
 
-<img src="plots/feats.png" alt="eval" width="550"/>
+<img src="plots/feats.png" alt="eval" width="650"/>
 
 MFCC from the samples generated and running mean, sd, max and med from each sample are collated as below.
 
